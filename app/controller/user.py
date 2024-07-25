@@ -5,7 +5,7 @@ import datetime
 import os
 from fastapi import HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer
-from app.models import User
+from app.models import Users
 from passlib.context import CryptContext
 from starlette import status
 from jose import jwt, JWTError
@@ -20,7 +20,7 @@ class user():
 
     def register_new_user(db, user_register):
         hashed_password = pwd_context.hash(user_register.password)
-        new_user = User(
+        new_user = Users(
             num_document=user_register.num_document,
             full_name=user_register.full_name,
             telephone=user_register.telephone,
@@ -51,7 +51,7 @@ class user():
             nit: str = payload.get('sub') # type: ignore
             user_id: int = payload.get('id') # type: ignore
 
-            user = db.query(User).filter(User.num_document == nit).first()
+            user = db.query(Users).filter(Users.num_document == nit).first()
 
             if user:
                 user_dict = {
@@ -60,7 +60,7 @@ class user():
                     "full_name": user.full_name,
                     "telephone": user.telephone,
                     "email": user.email,
-                    "rol": user.rol,
+                    "rol": user.rol.value,
                 }
             else:
                 print("Usuario no encontrado")
@@ -70,7 +70,7 @@ class user():
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
                                     detail='Could not validate user.')
     
-            return {'username': nit, 'id': user_id, 'user': user_dict}
+            return {'username': nit, 'id': user_id,'user': user_dict}
         
         except JWTError as error:
             print(error)
@@ -81,7 +81,7 @@ class user():
 
 def authenticate_user(username: str, password: str, db): # type: ignore
 
-    user = db.query(User).filter(User.num_document == username).first()
+    user = db.query(Users).filter(Users.num_document == username).first()
 
     if not user:
         return False

@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Depends, FastAPI
 from sqlalchemy.orm import Session
 from app.config import database
-from app.routes import auth
+from app.routes import auth, forms
 
 
 app = FastAPI()
@@ -24,3 +24,4 @@ def read_root():
     return {"Hello": "World"}
 
 app.include_router(auth.router)
+app.include_router(forms.router)

@@ -14,8 +14,12 @@ class RolUser(enum.Enum):
     admin = 'admin'
     client = 'client'
 
-class InputDetail(Base):
-    __tablename__ = 'inputs_detail'
+class UserType(enum.Enum):
+    text = 'text'
+    file = 'file'
+
+class QuestionsDetail(Base):
+    __tablename__ = 'questions_detail'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name_label = Column(String(255))
@@ -24,7 +28,7 @@ class InputDetail(Base):
     created_at = Column(TIMESTAMP(timezone=True), default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), default=func.now(), onupdate=func.now())
 
-class Form(Base):
+class Forms(Base):
     __tablename__ = 'forms'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -34,7 +38,7 @@ class Form(Base):
     created_at = Column(TIMESTAMP(timezone=True), default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), default=func.now(), onupdate=func.now())
 
-class User(Base):
+class Users(Base):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -51,18 +55,19 @@ class ResponseUser(Base):
     __tablename__ = 'response_user'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    id_input_detail_fom = Column(Integer, ForeignKey('input_detail_form.id'))
+    id_question_detail_form = Column(Integer, ForeignKey('question_detail_form.id'))
     form = Column(Integer, ForeignKey('forms.id'))
     id_user = Column(Integer, ForeignKey('users.id'))
     response = Column(String(255))
+    type = Column(Enum(UserType))
     created_at = Column(TIMESTAMP(timezone=True), default=func.now())
 
 
-class InputDetailForm(Base):
-    __tablename__ = 'input_detail_form'
+class QuestionDetailForm(Base):
+    __tablename__ = 'question_detail_form'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    id_form = Column(Integer, ForeignKey('forms.id'))
-    id_input_detail = Column(Integer, ForeignKey('inputs_detail.id'))
+    id_forms = Column(Integer, ForeignKey('forms.id'))
+    id_quiestions_detail = Column(Integer, ForeignKey('questions_detail.id'))
     created_at = Column(TIMESTAMP(timezone=True), default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), default=func.now(), onupdate=func.now())
