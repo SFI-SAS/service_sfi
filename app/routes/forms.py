@@ -8,7 +8,6 @@ from app.controller.forms import forms
 from app.controller.user import user
 
 
-
 router = APIRouter(
     prefix='/forms',
     tags=['forms']
@@ -26,17 +25,21 @@ class DataForm(BaseModel):
     token: str = Field(..., min_length=1, max_length=255)
     name_form: str = Field(..., min_length=1, max_length=255)
     desc_form: str = Field(..., min_length=1, max_length=255)
+    status: str = Field(..., min_length=1, max_length=255)
 
 class UpdateForm(BaseModel):
     id: int
     name_form: Optional[str] = None
     desc_form: Optional[str] = None
+    status: Optional[str] = None
     token: str
 
 class DeleteForm(BaseModel):
     id: int
     token: str
 
+class FormIdRequest(BaseModel):
+    form_id: int
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
@@ -84,3 +87,21 @@ async def delete_form(
         return response
     else:
         return {"error": "Invalid rol"}
+    
+    
+@router.post("/")
+def get_form(db: db_dependency,request: FormIdRequest):
+    try:
+        response = forms.get_form( db,request)
+
+        return response
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error: {str(e)}"
+        )
+
+
+
+    

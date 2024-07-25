@@ -23,7 +23,7 @@ class QuestionsDetail(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name_label = Column(String(255))
-    type = Column(String(120))
+    type = Column(Enum(UserType))
     status =  Column(Enum(Status))
     created_at = Column(TIMESTAMP(timezone=True), default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), default=func.now(), onupdate=func.now())
@@ -59,7 +59,6 @@ class ResponseUser(Base):
     form = Column(Integer, ForeignKey('forms.id'))
     id_user = Column(Integer, ForeignKey('users.id'))
     response = Column(String(255))
-    type = Column(Enum(UserType))
     created_at = Column(TIMESTAMP(timezone=True), default=func.now())
 
 

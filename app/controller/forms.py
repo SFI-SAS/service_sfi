@@ -9,7 +9,7 @@ class forms():
         new_form = Forms(
                 name_form=data_form.name_form,
                 desc_form=data_form.desc_form,
-                status= 'inactive'
+                status= data_form.status
             )
 
         db.add(new_form)
@@ -26,6 +26,9 @@ class forms():
             form.name_form = data_form.name_form
         if data_form.desc_form:
             form.desc_form = data_form.desc_form
+        if data_form.status:
+            form.status = data_form.status
+            
 
         
         db.commit()
@@ -39,3 +42,20 @@ class forms():
         db.delete(form)
         db.commit()
         return {"message": "Form deleted successfully"}
+    
+
+
+    def get_form(db, request):
+        form = db.query(Forms).filter(Forms.id == request.form_id).first()
+        
+        if form:
+            form_dict = {
+                    "id": form.id,
+                    "name_form": form.name_form,
+                    "desc_form": form.desc_form,
+                    "status": form.status,
+
+                }
+        else:
+            raise HTTPException(status_code=404, detail="Form not found")
+        return form_dict
