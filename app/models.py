@@ -28,7 +28,7 @@ class Form(Base):
     __tablename__ = 'forms'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name_form = Column(String(255))
+    name_form = Column(String(255), unique=True)
     desc_form = Column(String(255))
     status = Column(Enum(Status))
     created_at = Column(TIMESTAMP(timezone=True), default=func.now())
@@ -38,8 +38,10 @@ class User(Base):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    num_document = Column(String(50), unique=True)
     full_name = Column(String(255))
-    telephone = Column(String(20))
+    telephone = Column(String(20), unique=True)
+    email = Column(String(120), unique=True)
     rol = Column(Enum(RolUser))
     password = Column(String(255))
     created_at = Column(TIMESTAMP(timezone=True), default=func.now())
