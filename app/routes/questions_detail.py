@@ -1,5 +1,5 @@
 
-from typing import Annotated, Optional
+from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -24,19 +24,26 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
+class Data(BaseModel):
+    name_label: str
+    type: str
+    status: str
+    position: int
 
 class DataQuestion(BaseModel):
-    name_label: str = Field(..., min_length=1, max_length=255)
-    type: str = Field(..., min_length=1, max_length=255)
-    id_forms: str = Field(..., min_length=1, max_length=255)
-    status: str = Field(..., min_length=1, max_length=255)
+    id_form: int
     token: str
+    data: List[Data]
+
+
+
 
 class UpdateQuestion(BaseModel):
     id: int
     name_label:  Optional[str] = None
     type:  Optional[str] = None
     status:  Optional[str] = None
+    position:  Optional[str] = None
     token: str
 
 class DeleteQuestion(BaseModel):
@@ -52,7 +59,6 @@ async def create_form(
     user_find = await user.valid_token_user(data_question.token, db)
     user_dict = user_find['user'].get('rol')
 
-    print(user_dict)
     if user_dict == 'client':
         response= questions_detail.new_questions_detail(db, data_question)
         return response

@@ -56,7 +56,7 @@ class ResponseUser(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     id_question_detail_form = Column(Integer, ForeignKey('question_detail_form.id'))
-    form = Column(Integer, ForeignKey('forms.id'))
+    id_form = Column(Integer, ForeignKey('forms.id'))
     id_user = Column(Integer, ForeignKey('users.id'))
     response = Column(String(255))
     created_at = Column(TIMESTAMP(timezone=True), default=func.now())
@@ -68,5 +68,6 @@ class QuestionDetailForm(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     id_forms = Column(Integer, ForeignKey('forms.id'))
     id_quiestions_detail = Column(Integer, ForeignKey('questions_detail.id'))
+    position =  Column(String(55))
     created_at = Column(TIMESTAMP(timezone=True), default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), default=func.now(), onupdate=func.now())

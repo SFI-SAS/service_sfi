@@ -1,11 +1,12 @@
 
-from typing import Annotated, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Annotated, List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from app.config.database import SessionLocal
 from app.controller.forms import forms
 from app.controller.user import user
+from app.models import Forms
 
 
 router = APIRouter(
@@ -38,8 +39,8 @@ class DeleteForm(BaseModel):
     id: int
     token: str
 
-class FormIdRequest(BaseModel):
-    form_id: int
+
+
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
@@ -89,10 +90,16 @@ async def delete_form(
         return {"error": "Invalid rol"}
     
     
-@router.post("/")
-def get_form(db: db_dependency,request: FormIdRequest):
+@router.get("/get_form")
+async def get_form(db: db_dependency, 
+    form_id: int = Query(...),  
+    token: str = Query(...)):
+
     try:
-        response = forms.get_form( db,request)
+        user_find = await user.valid_token_user(token, db)
+        user_rol = user_find['user'].get('rol')
+
+        response = forms.get_form( db,form_id,user_rol)
 
         return response
     
@@ -103,5 +110,20 @@ def get_form(db: db_dependency,request: FormIdRequest):
         )
 
 
+@router.get("/")
+async def get_all_forms(db: db_dependency, token: str = Query(...)):
 
+    try:
+        user_find = await user.valid_token_user(token, db)
+        user_rol = user_find['user'].get('rol')
+
+        response = forms.get_all_form( db,user_rol)
+
+        return response
     
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error: {str(e)}"
+        )
+
