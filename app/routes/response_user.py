@@ -1,6 +1,7 @@
 
+import json
 from typing import Annotated, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from app.config.database import SessionLocal
@@ -53,50 +54,57 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
-class TextEntry(BaseModel):
-    id_question_detail_form: int
-    response: Optional[str] = None
 
-class SubmitData(BaseModel):
-    token: str
-    id_form: int
-    text: Optional[List[TextEntry]] = []
-    data_file_id: List[str] = []
-    data_file: List[UploadFile] = []
+
+class TextItem(BaseModel):
+    id_question_detail_form: str
+    response: str
 
 @router.post("/submit_data", status_code=status.HTTP_201_CREATED)
-async def submit_data(
-    db: Session = Depends(get_db),
-    data: SubmitData = Depends()
+async def test_endpoint(
+    db: db_dependency, 
+    token: str = Form(...),
+    id_form: int = Form(...),
+    text: Optional[str] = Form(None), 
+    data_file_id: List[str] = Form(...),
+    data_file: List[UploadFile] = File(...),  
 ):
-    try:
-        user_find = await user.valid_token_user(data.token, db)
-        user_id = user_find['id']
+    user_find = await user.valid_token_user(token, db)
+    user_id = user_find['id']
 
-        if data.text:
-            response_user.new_response_user(db, user_id, data , data.text)
+    if text:
+        try:
+            text_items = json.loads(text)
+            text_data = [TextItem(**item) for item in text_items]
+            print(text, text_data)
+            response_user.new_response_user(db, user_id, id_form, text_data)
+        except (json.JSONDecodeError, TypeError) as e:
+            raise HTTPException(status_code=400, detail="Invalid text format")
+    else:
+        text_data = []  
 
-        if data.data_file:  
+    if data_file and data_file_id:
             responses = []
-            for file in data.data_file:
-                contents = await file.read()
-                file_extension = SUPPORTED_FILE_TYPES.get(file.content_type)
-                if not file_extension:
-                    raise HTTPException(status_code=400, detail="Unsupported file type")
+            for file in data_file:
+                try:
+                    contents = await file.read()
+                    file_extension = SUPPORTED_FILE_TYPES.get(file.content_type)
+                    if not file_extension:
+                        raise HTTPException(status_code=400, detail="Unsupported file type")
+                    key = f"{id_form}_{user_id}_{file.filename}"
+                    await s3_upload(contents, key)
+                    responses.append({"filename": key})
 
-                key = f"{data.id_form}{user_id}_{file.filename}"
-                responses.append({"filename": key})
-                print(responses)
-                await s3_upload(contents, key)
+                    
+                except Exception as e:
+                    raise HTTPException(status_code=500, detail=f"Error processing file {file.filename}: {str(e)}")
                 
-            response_user.new_response_user(db, user_id, responses, data.data_file_id)
-
-        return {"success": True, "data": {"message": "Document update successfully."}}
-
-    except Exception as e:
-        logger.error(e)
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Could not validate user.',
-            headers={"message": f"{e}"}
-        )
+            result_json = {
+            "files": [
+                {"id_question_detail_form": fid, "response": resp["filename"]}
+                for fid, resp in zip(data_file_id, responses)
+            ]
+            }
+            print(f"Sending result_json: {result_json}")
+            response_user.new_response_user(db, user_id, id_form, result_json['files'])
+    return {"success": True, "data": {"message": "Documents updated successfully."}}

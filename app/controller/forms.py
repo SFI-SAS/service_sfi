@@ -22,7 +22,7 @@ class forms():
 
         return {"message": "Form created successfully"}
     
-    def update_form(db, data_form):
+    async def update_form(db, data_form):
         form = db.query(Forms).filter(Forms.id == data_form.id).first()
         if not form:
             raise HTTPException(status_code=404, detail="Form not found")
@@ -35,6 +35,7 @@ class forms():
             form.status = data_form.status
         db.commit()
         return {"message": "Form updated successfully"}
+    
     
     def delete_form(db, data_form):
         form = db.query(Forms).filter(Forms.id == data_form.id).first()
