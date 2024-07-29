@@ -78,6 +78,7 @@ async def test_endpoint(
             text_data = [TextItem(**item) for item in text_items]
             print(text, text_data)
             response_user.new_response_user(db, user_id, id_form, text_data)
+            return {"success": True, "data": {"message": "Documents updated successfully."}}
         except (json.JSONDecodeError, TypeError) as e:
             raise HTTPException(status_code=400, detail="Invalid text format")
     else:
@@ -106,5 +107,5 @@ async def test_endpoint(
             ]
             }
             print(f"Sending result_json: {result_json}")
-            response_user.new_response_user(db, user_id, id_form, result_json['files'])
-    return {"success": True, "data": {"message": "Documents updated successfully."}}
+            response_user.new_response_user_file(db, user_id, id_form, result_json['files'])
+            return {"success": True, "data": {"message": "Documents updated successfully."}}

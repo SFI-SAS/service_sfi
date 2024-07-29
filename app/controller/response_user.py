@@ -10,7 +10,7 @@ from app.models import QuestionDetailForm, QuestionsDetail, ResponseUser
 
 class response_user():       
 
-    def new_response_user(db, user_id, id_form, text):
+    def new_response_user_file(db, user_id, id_form, text):
         if not isinstance(text, list):
             raise HTTPException(status_code=400, detail="Expected a list of entries")
         
@@ -22,8 +22,6 @@ class response_user():
             
             ids_question_detail_form = text_entry.get("id_question_detail_form")
             response = text_entry.get("response")
-            
-            # Dividir los IDs si hay varios
             ids_list = ids_question_detail_form.split(',')
             print(f"Processing entry {index + 1}: ids_question_detail_form={ids_list}, response={response}")
 
@@ -62,3 +60,17 @@ class response_user():
         
         return new_filename
     
+    def new_response_user(db, user_id, id_form, text):
+        for text_entry in text:
+            question_detail_form = db.query(QuestionDetailForm).filter(QuestionDetailForm.id == text_entry["id_question_detail_form"]).first()
+            if question_detail_form:
+                new_response = ResponseUser(
+                    id_question_detail_form=text_entry["id_question_detail_form"],
+                    id_form=id_form,
+                    id_user=user_id,
+                    response=text_entry["response"]
+                )
+                db.add(new_response)
+            else:
+                raise HTTPException(status_code=404, detail=f"QuestionDetailForm with ID {text_entry['id_question_detail_form']} not found")
+        db.commit()
