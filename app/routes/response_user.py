@@ -1,4 +1,5 @@
 
+from datetime import datetime
 import json
 from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
@@ -77,6 +78,7 @@ async def test_endpoint(
             text_items = json.loads(text)
             text_data = [TextItem(**item) for item in text_items]
             print(text, text_data)
+            
             response_user.new_response_user(db, user_id, id_form, text_data)
             return {"success": True, "data": {"message": "Documents updated successfully."}}
         except (json.JSONDecodeError, TypeError) as e:
@@ -86,26 +88,33 @@ async def test_endpoint(
 
     if data_file and data_file_id:
             responses = []
+
+            id_question_detail_forms = [item for sublist in (item.split(',') for item in data_file_id) for item in sublist]
+
+            if len(id_question_detail_forms) != len(data_file):
+                raise HTTPException(status_code=400, detail="Mismatch between file IDs and files.")
+
+            
             for file in data_file:
                 try:
+                    current_datetime = datetime.now().strftime('%Y%m%d%H%M%S%f')
                     contents = await file.read()
                     file_extension = SUPPORTED_FILE_TYPES.get(file.content_type)
                     if not file_extension:
                         raise HTTPException(status_code=400, detail="Unsupported file type")
-                    key = f"{id_form}_{user_id}_{file.filename}"
+                    key = f"{user_id}{current_datetime}"
                     await s3_upload(contents, key)
                     responses.append({"filename": key})
 
                     
                 except Exception as e:
                     raise HTTPException(status_code=500, detail=f"Error processing file {file.filename}: {str(e)}")
-                
-            result_json = {
-            "files": [
+      
+            result_json = [
                 {"id_question_detail_form": fid, "response": resp["filename"]}
-                for fid, resp in zip(data_file_id, responses)
+                for fid, resp in zip(id_question_detail_forms, responses)
             ]
-            }
-            print(f"Sending result_json: {result_json}")
-            response_user.new_response_user_file(db, user_id, id_form, result_json['files'])
+            text_data = [TextItem(**item) for item in result_json]
+            response_user.new_response_user(db, user_id, id_form, text_data)
             return {"success": True, "data": {"message": "Documents updated successfully."}}
+    
