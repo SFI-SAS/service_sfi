@@ -5,12 +5,12 @@ import random
 from fastapi import HTTPException, Depends
 from starlette import status
 from typing import Annotated
-from app.models import QuestionDetailForm, QuestionsDetail, ResponseUser
+from app.models import QuestionDetailForm, QuestionsDetail, ResponseUser, UsersRefsForm
 
 
 class response_user():       
 
-    def new_response_user(db,user_id,id_form, data):
+    def new_response_user(db,user_id,id_form, data,reference):
 
         for text_entry in data:
             question_detail_form = db.query(QuestionDetailForm).filter(QuestionDetailForm.id == text_entry.id_question_detail_form).first()
@@ -22,6 +22,13 @@ class response_user():
                     response=text_entry.response
                 )
                 db.add(new_response)
+
+                db_users_refs_form = UsersRefsForm(
+                    id_user=user_id,
+                    id_form=id_form,
+                    reference=reference,
+                )
+                db.add(db_users_refs_form)
             else:
                 raise HTTPException(status_code=404, detail=f"QuestionDetailForm with ID {text_entry.id_question_detail_form} not found")
         db.commit()

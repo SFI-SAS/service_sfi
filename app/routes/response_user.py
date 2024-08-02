@@ -66,6 +66,7 @@ async def test_endpoint(
     db: db_dependency, 
     token: str = Form(...),
     id_form: int = Form(...),
+    reference: str = Form(...),
     text: Optional[str] = Form(None), 
     data_file_id: List[str] = Form(...),
     data_file: List[UploadFile] = File(...),  
@@ -79,7 +80,7 @@ async def test_endpoint(
             text_data = [TextItem(**item) for item in text_items]
             print(text, text_data)
             
-            response_user.new_response_user(db, user_id, id_form, text_data)
+            response_user.new_response_user(db, user_id, id_form, text_data, reference)
             return {"success": True, "data": {"message": "Documents updated successfully."}}
         except (json.JSONDecodeError, TypeError) as e:
             raise HTTPException(status_code=400, detail="Invalid text format")
@@ -102,7 +103,7 @@ async def test_endpoint(
                     file_extension = SUPPORTED_FILE_TYPES.get(file.content_type)
                     if not file_extension:
                         raise HTTPException(status_code=400, detail="Unsupported file type")
-                    key = f"{user_id}{current_datetime}"
+                    key = f"{user_id}{current_datetime}.{file_extension}"
                     await s3_upload(contents, key)
                     responses.append({"filename": key})
 
@@ -115,6 +116,6 @@ async def test_endpoint(
                 for fid, resp in zip(id_question_detail_forms, responses)
             ]
             text_data = [TextItem(**item) for item in result_json]
-            response_user.new_response_user(db, user_id, id_form, text_data)
+            response_user.new_response_user(db, user_id, id_form, text_data, reference)
             return {"success": True, "data": {"message": "Documents updated successfully."}}
     

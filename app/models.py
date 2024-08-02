@@ -71,3 +71,14 @@ class QuestionDetailForm(Base):
     position =  Column(String(55))
     created_at = Column(TIMESTAMP(timezone=True), default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), default=func.now(), onupdate=func.now())
+
+
+class UsersRefsForm(Base):
+    __tablename__ = 'users_refs_form'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    id_user = Column(Integer, ForeignKey('users.id'))
+    id_form = Column(Integer, ForeignKey('forms.id'))
+    reference = Column(String(55))
+    created_at = Column(TIMESTAMP(timezone=True), default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), default=func.now(), onupdate=func.now())
