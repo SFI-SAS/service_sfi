@@ -1,7 +1,6 @@
 
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException
 from starlette import status
-from typing import Annotated
 from app.models import QuestionDetailForm, QuestionsDetail
 
 
