@@ -11,7 +11,7 @@ USER_BD = os.getenv("USER_DB")
 HOST_BD = os.getenv("HOST_DB")
 
 
-SQLALCHEMY_DATABASE_URL = f'mysql+pymysql://{USER_BD}:{PASSWORD_BD}@{HOST_BD}:3306/service_sfi'
+SQLALCHEMY_DATABASE_URL = f'mysql+pymysql://{USER_BD}:{PASSWORD_BD}@{HOST_BD}:3306/forms_sfi'
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True, pool_size=10, max_overflow=2, pool_timeout=30, pool_recycle=1800)
 
