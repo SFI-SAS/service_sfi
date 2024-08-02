@@ -1,13 +1,8 @@
 
-from fastapi import HTTPException, Depends
-from pydantic import BaseModel
-from sqlalchemy import join
+from fastapi import HTTPException
 from starlette import status
-from typing import Annotated
-from app.models import Forms, QuestionDetailForm, QuestionsDetail, ResponseUser
+from app.models import Forms, QuestionDetailForm, QuestionsDetail
 from sqlalchemy.orm import aliased
-
-
 
 class forms():       
     def create_new_form(db, data_form):

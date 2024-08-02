@@ -1,13 +1,11 @@
 
 from typing import Annotated, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Depends, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.config.database import SessionLocal
-from app.controller.forms import forms
 from app.controller.questions_detail import questions_detail
 from app.controller.user import user
-
 
 
 router = APIRouter(
@@ -34,8 +32,6 @@ class DataQuestion(BaseModel):
     id_form: int
     token: str
     data: List[Data]
-
-
 
 
 class UpdateQuestion(BaseModel):
