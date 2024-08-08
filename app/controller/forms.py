@@ -15,12 +15,12 @@ class forms():
         db.add(new_form)
         db.commit()
 
-        return {"message": "Form created successfully"}
+        return {"mensaje": "Formulario creado correctamente"}
     
     async def update_form(db, data_form):
         form = db.query(Forms).filter(Forms.id == data_form.id).first()
         if not form:
-            raise HTTPException(status_code=404, detail="Form not found")
+            raise HTTPException(status_code=404, detail="Formulario no encontrado")
         
         if data_form.name_form:
             form.name_form = data_form.name_form
@@ -29,17 +29,17 @@ class forms():
         if data_form.status:
             form.status = data_form.status
         db.commit()
-        return {"message": "Form updated successfully"}
+        return {"mensaje": "Formulario actualizado correctamente"}
     
     
     def delete_form(db, data_form):
         form = db.query(Forms).filter(Forms.id == data_form.id).first()
         if not form:
-            raise HTTPException(status_code=404, detail="Form not found")
+            raise HTTPException(status_code=404, detail="Formulario no encontrado")
         
         db.delete(form)
         db.commit()
-        return {"message": "Form deleted successfully"}
+        return {"mensaje": "Formulario eliminado correctamente"}
     
 
 
@@ -68,7 +68,7 @@ class forms():
         ).all()
 
         if not form_details:
-            raise HTTPException(status_code=404, detail="Form not found or no related questions")
+            raise HTTPException(status_code=404, detail="Formulario no encontrado o no hay preguntas relacionadas")
 
         if user_rol == 'client' and  form_details[0].status.value == 'active':
             form_data = {

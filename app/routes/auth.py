@@ -48,7 +48,7 @@ async def register_user(
     except Exception as e:
         print(e)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail='Could not validate user.', headers={"message": f"{e}"})
+                            detail='No se ha podido validar el usuario.', headers={"message": f"{e}"})
 
 @router.post("/get_token", response_model=Token)
 async def get_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
@@ -83,7 +83,7 @@ async def reset_password(
         response = await user.reset_password(db, token, new_password)
         return {"status": True, "user": response }
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token or password reset failed.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No se ha podido restablecer el token o la contraseña.")
     
 
 
@@ -93,6 +93,6 @@ def activate_user( db: db_dependency ,email: str):
         user.activate_user_status(email,db)
         return RedirectResponse(url="https://saferut.com/", status_code=307)
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Correo electrónico no válido.")
     
 

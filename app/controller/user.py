@@ -39,7 +39,7 @@ class user():
 
         if not user:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                                    detail='Could not validate user. Incorrect num_document or password.')
+                                    detail='No se ha podido validar el usuario. Numero de documento o contraseña incorrectos.')
 
 
         token = create_access_token(user.num_document, user.id, timedelta(hours=24))
@@ -69,7 +69,7 @@ class user():
 
             if nit is None or user_id is None:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
-                                    detail='Could not validate user.')
+                                    detail='No se ha podido validar el usuario.')
     
             return {'username': nit, 'id': user_id,'user': user_dict}
         
@@ -77,7 +77,7 @@ class user():
             print(error)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, 
-                detail="Could not validate user."
+                detail="No se ha podido validar el usuario."
             )
         
     async def handle_reset_password_email(db, email: str):
@@ -86,7 +86,7 @@ class user():
                 token_data = {"sub": user.email, "id": user.id}
                 token = jwt.encode(token_data, secret_key, algorithm=algorithm)
                 send_email_password(email, token)
-                return {"message": "Correo enviado con éxito", "token":token}
+                return {"mensaje": "Correo enviado con éxito", "token":token}
             else:
                 raise HTTPException(status_code=400, detail='Usuario no encontrado') 
 
@@ -98,12 +98,12 @@ class user():
 
             if username is None or user_id is None:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
-                                    detail='Could not validate user.')
+                                    detail='No se ha podido validar el usuario.')
 
             user = db.query(Users).filter(Users.id == user_id, Users.email == username).first()
             if user is None:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
-                                    detail='Could not validate user.')
+                                    detail='No se ha podido validar el usuario.')
 
             hashed_password = bcrypt_context.hash(new_password)
             user.password = hashed_password
@@ -111,14 +111,14 @@ class user():
             db.commit()
             db.refresh(user)
 
-            return {"message": "Password reset successful"}
+            return {"mensaje": "Contraseña restablecida correctamente"}
 
         except JWTError:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                                detail='Could not validate user')
+                                detail='No se ha podido validar el usuario')
         except Exception as e:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
-                                detail=f'Password reset failed: {str(e)}')
+                                detail=f'No se ha podido restablecer la contraseña: {str(e)}')
         
 
     def activate_user_status(email,db):
@@ -131,7 +131,7 @@ class user():
         user.status = "active" 
         db.commit()
         
-        return {"message": True}
+        return {"mensaje": True}
 
 
     def get_active_user_by_id(db , user_id: int):
