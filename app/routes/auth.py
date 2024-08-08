@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Form, HTTPException, status
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
@@ -64,3 +64,20 @@ async def valid_token(token: Token, db: db_dependency):
     else:
         return {"status": False, "user": None}
     
+
+@router.post("/send_reset_password")
+async def send_reset_password(db: Session = Depends(get_db), email: str = Form(...)):
+    response = await user.handle_reset_password_email(db, email)
+    return response
+
+
+@router.post("/reset-password")
+async def reset_password(
+    db: db_dependency ,
+    token: str = Form(...),
+    new_password: str = Form(...)):
+    try:
+        response = await user.reset_password(db, token, new_password)
+        return {"status": True, "user": response }
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token or password reset failed.")

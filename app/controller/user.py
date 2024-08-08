@@ -2,6 +2,7 @@ import datetime
 import os
 from fastapi import HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer
+from app.controller.mail import send_email_password
 from app.models import Users
 from passlib.context import CryptContext
 from starlette import status
@@ -12,6 +13,8 @@ oauth2_bearer = OAuth2PasswordBearer(tokenUrl='auth/token')
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 secret_key = os.getenv("SECRET_KEY")
 algorithm = os.getenv("ALGORITHM")
+bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
+
 
 class user():
 
@@ -75,6 +78,46 @@ class user():
                 status_code=status.HTTP_401_UNAUTHORIZED, 
                 detail="Could not validate user."
             )
+        
+    async def handle_reset_password_email(db, email: str):
+            user = db.query(Users).filter(Users.email == email).first()
+            if user:
+                token_data = {"sub": user.email, "id": user.id}
+                token = jwt.encode(token_data, secret_key, algorithm=algorithm)
+                send_email_password(email, token)
+                return {"message": "Correo enviado con éxito", "token":token}
+            else:
+                raise HTTPException(status_code=400, detail='Usuario no encontrado') 
+
+    async def reset_password(db, token: str, new_password: str):
+        try:
+            payload = jwt.decode(token, secret_key, algorithms=[algorithm])
+            username: str = payload.get('sub')
+            user_id: int = payload.get('id')
+
+            if username is None or user_id is None:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
+                                    detail='Could not validate user.')
+
+            user = db.query(Users).filter(Users.id == user_id, Users.email == username).first()
+            if user is None:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
+                                    detail='Could not validate user.')
+
+            hashed_password = bcrypt_context.hash(new_password)
+            user.password = hashed_password
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+            return {"message": "Password reset successful"}
+
+        except JWTError:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail='Could not validate user')
+        except Exception as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                                detail=f'Password reset failed: {str(e)}')
 
 def authenticate_user(username: str, password: str, db): # type: ignore
 
