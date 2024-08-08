@@ -71,6 +71,7 @@ async def test_endpoint(
 ):
     user_find = await user.valid_token_user(token, db)
     user_id = user_find['id']
+    user.get_active_user_by_id(db,user_id)
 
     if text:
         try:

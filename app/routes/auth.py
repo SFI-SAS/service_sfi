@@ -1,10 +1,11 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, Form, HTTPException, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from app.config.database import SessionLocal
+from app.controller import mail
 from app.controller.user import user
 
 
@@ -31,7 +32,8 @@ class UserRegister(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
-
+class UpdateStatusRequest(BaseModel):
+    email: str
 db_dependency = Annotated[Session, Depends(get_db)]
 
 @router.post("/register", status_code=status.HTTP_201_CREATED )
@@ -41,6 +43,7 @@ async def register_user(
 ):
     try:
         creation_result = user.register_new_user(db, user_register)
+        mail.send_confirmation_mail(user_register.email)
         return creation_result
     except Exception as e:
         print(e)
@@ -81,3 +84,15 @@ async def reset_password(
         return {"status": True, "user": response }
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token or password reset failed.")
+    
+
+
+@router.get("/activate_user", response_model=dict)
+def activate_user( db: db_dependency ,email: str):
+    try:
+        user.activate_user_status(email,db)
+        return RedirectResponse(url="https://saferut.com/", status_code=307)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email.")
+    
+

@@ -1,6 +1,6 @@
 import datetime
 import os
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException, Depends, status as http_status
 from fastapi.security import OAuth2PasswordBearer
 from app.controller.mail import send_email_password
 from app.models import Users
@@ -26,7 +26,8 @@ class user():
             telephone=user_register.telephone,
             email=user_register.email,
             rol=user_register.rol,
-            password=hashed_password
+            password=hashed_password,
+            status="inactive"
         )
         db.add(new_user)
         db.commit()
@@ -118,6 +119,36 @@ class user():
         except Exception as e:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
                                 detail=f'Password reset failed: {str(e)}')
+        
+
+    def activate_user_status(email,db):
+        user = db.query(Users).filter(Users.email == email).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuario no encontrado"
+            )
+        user.status = "active" 
+        db.commit()
+        
+        return {"message": True}
+
+
+    def get_active_user_by_id(db , user_id: int):
+        # Buscar el usuario por ID
+        user = db.query(Users).filter(Users.id == user_id).first()
+
+        # Verificar si el usuario existe
+        if not user:
+            raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+
+        # Verificar si el status es 'active'
+        if user.status != 'active':
+            raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail="El usuario no está activo")
+
+        # Retornar el usuario si está activo
+        return user
+
 
 def authenticate_user(username: str, password: str, db): # type: ignore
 

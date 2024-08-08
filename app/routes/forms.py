@@ -48,6 +48,8 @@ async def create_form(
 ):
     user_find = await user.valid_token_user(data_form.token, db)
     user_dict = user_find['user'].get('rol')
+    user_id = user_find['id']
+    user.get_active_user_by_id(db,user_id)
 
     if user_dict == 'client':
         response= forms.create_new_form(db, data_form)
@@ -63,6 +65,8 @@ async def update_form(
 ):
     user_find = await user.valid_token_user(data_form.token, db)
     user_dict = user_find['user'].get('rol')
+    user_id = user_find['id']
+    user.get_active_user_by_id(db,user_id)
 
     if user_dict == 'client':
         response = forms.update_form(db, data_form)
@@ -78,7 +82,8 @@ async def delete_form(
 ):
     user_find = await user.valid_token_user(data_form.token, db)
     user_dict = user_find['user'].get('rol')
-
+    user_id = user_find['id']
+    user.get_active_user_by_id(db,user_id)
     if user_dict == 'client':
         response = forms.delete_form(db, data_form)
         return response

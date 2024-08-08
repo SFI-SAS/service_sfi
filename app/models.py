@@ -48,6 +48,7 @@ class Users(Base):
     email = Column(String(120), unique=True)
     rol = Column(Enum(RolUser))
     password = Column(String(255))
+    status = Column(Enum(Status))
     created_at = Column(TIMESTAMP(timezone=True), default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), default=func.now(), onupdate=func.now())
     
