@@ -25,7 +25,7 @@ class user():
             full_name=user_register.full_name,
             telephone=user_register.telephone,
             email=user_register.email,
-            rol=user_register.rol,
+            rol="user",
             password=hashed_password,
             status="inactive"
         )
@@ -39,45 +39,56 @@ class user():
 
         if not user:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                                    detail='No se ha podido validar el usuario. Numero de documento o contraseña incorrectos.')
+                                    detail='No se ha podido validar el usuario. Email o contraseña incorrectos.')
 
 
-        token = create_access_token(user.num_document, user.id, timedelta(hours=24))
+        token = create_access_token(user.email, user.id, timedelta(hours=24))
         
         return {'access_token': token, 'token_type': 'bearer'}
-    
-    async def valid_token_user(token: Annotated[str, Depends(oauth2_bearer)], db): # type: ignore
+
+    async def valid_token_user(token: Annotated[str, Depends(oauth2_bearer)], db):  # type: ignore
         try:
+          
             payload = jwt.decode(token, secret_key, algorithms=[algorithm]) # type: ignore
-            nit: str = payload.get('sub') # type: ignore
+            email: str = payload.get('sub') # type: ignore
             user_id: int = payload.get('id') # type: ignore
 
-            user = db.query(Users).filter(Users.num_document == nit).first()
+            user = db.query(Users).filter(Users.email == email).first()
+            
+            # Verificar si el email o user_id son None
+            if email is None or user_id is None:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail='No se ha podido validar el usuario.'
+                )
 
-            if user:
-                user_dict = {
-                    "id": user.id,
-                    "num_document": user.num_document,
-                    "full_name": user.full_name,
-                    "telephone": user.telephone,
-                    "email": user.email,
-                    "rol": user.rol.value,
-                }
-            else:
-                print("Usuario no encontrado")
+            # Buscar al usuario por email
+            user = db.query(Users).filter(Users.email == email).first()
 
+            # Verificar si el usuario fue encontrado
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Usuario no encontrado"
+                )
 
-            if nit is None or user_id is None:
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
-                                    detail='No se ha podido validar el usuario.')
-    
-            return {'username': nit, 'id': user_id,'user': user_dict}
-        
-        except JWTError as error:
-            print(error)
+            # Crear el diccionario del usuario
+            user_dict = {
+                "id": user.id,
+                "num_document": user.num_document,
+                "full_name": user.full_name,
+                "telephone": user.telephone,
+                "email": user.email,
+                "rol": user.rol.value,
+            }
+
+            # Retornar la información del usuario y del token
+            return {'username': email, 'id': user_id, 'user': user_dict}
+
+        except jwt.JWTError:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, 
-                detail="No se ha podido validar el usuario."
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Token inválido o expirado.'
             )
         
     async def handle_reset_password_email(db, email: str):
@@ -152,7 +163,7 @@ class user():
 
 def authenticate_user(username: str, password: str, db): # type: ignore
 
-    user = db.query(Users).filter(Users.num_document == username).first()
+    user = db.query(Users).filter(Users.email == username).first()
 
     if not user:
         return False

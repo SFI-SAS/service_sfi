@@ -26,7 +26,6 @@ class UserRegister(BaseModel):
     full_name: str = Field(..., min_length=1, max_length=255)
     telephone: str = Field(..., min_length=1, max_length=50)
     email: str = Field(..., min_length=1, max_length=255)
-    rol: str = Field(..., min_length=1, max_length=50)
     password: str = Field(..., min_length=1, max_length=120)
 
 class Token(BaseModel):
