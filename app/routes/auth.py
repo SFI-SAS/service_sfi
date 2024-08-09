@@ -52,7 +52,7 @@ async def get_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
                 db: db_dependency):
     response = await user.login_access(form_data, db)
     
-    return JSONResponse(status_code=status.HTTP_200_OK, content=response )
+    return JSONResponse(status_code=status.HTTP_200_OK, content=response)
 
 
 @router.post("/valid_token")
