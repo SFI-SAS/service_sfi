@@ -1,7 +1,8 @@
 import datetime
 import os
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException, Depends, status as http_status
 from fastapi.security import OAuth2PasswordBearer
+from app.controller.mail import send_email_password
 from app.models import Users
 from passlib.context import CryptContext
 from starlette import status
@@ -12,6 +13,8 @@ oauth2_bearer = OAuth2PasswordBearer(tokenUrl='auth/token')
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 secret_key = os.getenv("SECRET_KEY")
 algorithm = os.getenv("ALGORITHM")
+bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
+
 
 class user():
 
@@ -22,8 +25,9 @@ class user():
             full_name=user_register.full_name,
             telephone=user_register.telephone,
             email=user_register.email,
-            rol=user_register.rol,
-            password=hashed_password
+            rol="user",
+            password=hashed_password,
+            status="inactive"
         )
         db.add(new_user)
         db.commit()
@@ -35,50 +39,131 @@ class user():
 
         if not user:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                                    detail='Could not validate user. Incorrect num_document or password.')
+                                    detail='No se ha podido validar el usuario. Email o contraseña incorrectos.')
 
 
-        token = create_access_token(user.num_document, user.id, timedelta(hours=24))
+        token = create_access_token(user.email, user.id, timedelta(hours=24))
         
         return {'access_token': token, 'token_type': 'bearer'}
-    
-    async def valid_token_user(token: Annotated[str, Depends(oauth2_bearer)], db): # type: ignore
+
+    async def valid_token_user(token: Annotated[str, Depends(oauth2_bearer)], db):  # type: ignore
         try:
+          
             payload = jwt.decode(token, secret_key, algorithms=[algorithm]) # type: ignore
-            nit: str = payload.get('sub') # type: ignore
+            email: str = payload.get('sub') # type: ignore
             user_id: int = payload.get('id') # type: ignore
 
-            user = db.query(Users).filter(Users.num_document == nit).first()
+            user = db.query(Users).filter(Users.email == email).first()
+            
+            # Verificar si el email o user_id son None
+            if email is None or user_id is None:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail='No se ha podido validar el usuario.'
+                )
 
-            if user:
-                user_dict = {
-                    "id": user.id,
-                    "num_document": user.num_document,
-                    "full_name": user.full_name,
-                    "telephone": user.telephone,
-                    "email": user.email,
-                    "rol": user.rol.value,
-                }
-            else:
-                print("Usuario no encontrado")
+            # Buscar al usuario por email
+            user = db.query(Users).filter(Users.email == email).first()
 
+            # Verificar si el usuario fue encontrado
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Usuario no encontrado"
+                )
 
-            if nit is None or user_id is None:
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
-                                    detail='Could not validate user.')
-    
-            return {'username': nit, 'id': user_id,'user': user_dict}
-        
-        except JWTError as error:
-            print(error)
+            # Crear el diccionario del usuario
+            user_dict = {
+                "id": user.id,
+                "num_document": user.num_document,
+                "full_name": user.full_name,
+                "telephone": user.telephone,
+                "email": user.email,
+                "rol": user.rol.value,
+            }
+
+            # Retornar la información del usuario y del token
+            return {'username': email, 'id': user_id, 'user': user_dict}
+
+        except jwt.JWTError:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, 
-                detail="Could not validate user."
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Token inválido o expirado.'
             )
+        
+    async def handle_reset_password_email(db, email: str):
+            user = db.query(Users).filter(Users.email == email).first()
+            if user:
+                token_data = {"sub": user.email, "id": user.id}
+                token = jwt.encode(token_data, secret_key, algorithm=algorithm)
+                send_email_password(email, token)
+                return {"mensaje": "Correo enviado con éxito", "token":token}
+            else:
+                raise HTTPException(status_code=400, detail='Usuario no encontrado') 
+
+    async def reset_password(db, token: str, new_password: str):
+        try:
+            payload = jwt.decode(token, secret_key, algorithms=[algorithm])
+            username: str = payload.get('sub')
+            user_id: int = payload.get('id')
+
+            if username is None or user_id is None:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
+                                    detail='No se ha podido validar el usuario.')
+
+            user = db.query(Users).filter(Users.id == user_id, Users.email == username).first()
+            if user is None:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
+                                    detail='No se ha podido validar el usuario.')
+
+            hashed_password = bcrypt_context.hash(new_password)
+            user.password = hashed_password
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+            return {"mensaje": "Contraseña restablecida correctamente"}
+
+        except JWTError:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail='No se ha podido validar el usuario')
+        except Exception as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                                detail=f'No se ha podido restablecer la contraseña: {str(e)}')
+        
+
+    def activate_user_status(email,db):
+        user = db.query(Users).filter(Users.email == email).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuario no encontrado"
+            )
+        user.status = "active" 
+        db.commit()
+        
+        return {"mensaje": True}
+
+
+    def get_active_user_by_id(db , user_id: int):
+        # Buscar el usuario por ID
+        user = db.query(Users).filter(Users.id == user_id).first()
+
+        # Verificar si el usuario existe
+        if not user:
+            raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+
+        # Verificar si el status es 'active'
+        if user.status != 'active':
+            raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail="El usuario no está activo")
+
+        # Retornar el usuario si está activo
+        return user
+
 
 def authenticate_user(username: str, password: str, db): # type: ignore
 
-    user = db.query(Users).filter(Users.num_document == username).first()
+    user = db.query(Users).filter(Users.email == username).first()
 
     if not user:
         return False

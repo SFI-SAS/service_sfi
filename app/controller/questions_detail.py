@@ -43,7 +43,7 @@ class questions_detail():
 
         result_question = db.query(QuestionsDetail).filter(QuestionsDetail.id == data_question.id).first()
         if not result_question:
-            raise HTTPException(status_code=404, detail="Form not found")
+            raise HTTPException(status_code=404, detail="Formulario no encontrado")
         
         if data_question.name_label:
             result_question.name_label = data_question.name_label
@@ -58,7 +58,7 @@ class questions_detail():
         if data_question.position:
             positios_form.position = data_question.position
         db.commit()
-        return {"message": "questions_detail updated successfully"}
+        return {"message": "Actualizado correctamente"}
     
 
     def delete_question(db, data_question):
@@ -66,14 +66,14 @@ class questions_detail():
         reference_question = db.query(QuestionDetailForm).filter(QuestionDetailForm.id_quiestions_detail == data_question.id).first()
 
         if not result_question:
-            raise HTTPException(status_code=404, detail="Form not found")
+            raise HTTPException(status_code=404, detail="Formulario no encontrado")
         try:
             db.delete(reference_question)
             db.commit()
             
             db.delete(result_question)
             db.commit()
-            return {"message": "result_question deleted successfully"}
+            return {"message": "Eliminado correctamente"}
             
         except Exception as e:
             db.rollback()  
